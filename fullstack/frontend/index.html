@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Study Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1c1f27;
+    --ink-soft: #5b5f6c;
+    --ink-faint: #9195a1;
+    --paper: #f6f4ef;
+    --panel: #ffffff;
+    --line: #e4ddd0;
+    --navy: #28345c;
+    --navy-deep: #1c2544;
+    --navy-wash: #eef0f6;
+    --gold: #c9941f;
+    --gold-soft: #f4e3b0;
+    --sage: #52735b;
+    --sage-wash: #e9f0ea;
+    --danger: #a6453a;
+    --ok: #3f7a4f;
+    --radius: 4px;
+    --radius-lg: 8px;
+    --sidebar-w: 360px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 14.5px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button, input, select { font-family: inherit; }
+
+  /* ---------- App shell ---------- */
+
+  .app-shell { display: flex; min-height: 100vh; }
+
+  .topbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 56px;
+    background: var(--navy-deep);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    z-index: 20;
+    gap: 14px;
+  }
+  .topbar .brand {
+    font-family: 'Lora', serif;
+    font-weight: 600;
+    font-size: 17px;
+    letter-spacing: -0.01em;
+  }
+  .topbar .sub {
+    font-size: 12px;
+    color: #aab0c4;
+    border-left: 1px solid #3a4568;
+    padding-left: 14px;
+  }
+  .status-pill {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    color: #c7ccdb;
+  }
+  .status-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--ink-faint);
+    transition: background 0.25s;
+  }
+  .status-dot.ok { background: #5fcf7e; box-shadow: 0 0 0 3px rgba(95,207,126,0.2); }
+  .status-dot.down { background: #e2695f; box-shadow: 0 0 0 3px rgba(226,105,95,0.2); }
+
+  .sidebar {
+    width: var(--sidebar-w);
+    flex-shrink: 0;
+    background: var(--panel);
+    border-right: 1px solid var(--line);
+    padding: 80px 26px 40px;
+    height: 100vh;
+    overflow-y: auto;
+    position: sticky;
+    top: 0;
+  }
+
+  .main {
+    flex: 1;
+    padding: 80px 44px 80px;
+    max-width: 920px;
+  }
+
+  h2.sidebar-h {
+    font-family: 'Lora', serif;
+    font-weight: 600;
+    font-size: 15px;
+    margin: 28px 0 12px;
+    color: var(--ink);
+  }
+  h2.sidebar-h:first-child { margin-top: 0; }
+
+  /* ---------- Course rows (sidebar) ---------- */
+
+  .course-card {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 12px;
+    margin-bottom: 10px;
+    background: var(--paper);
+    position: relative;
+  }
+  .course-card input { width: 100%; }
+  .course-card .f-name {
+    font-weight: 600;
+    font-size: 13.5px;
+    border: none;
+    background: transparent;
+    padding: 0 0 8px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 8px;
+  }
+  .course-card .f-name:focus { outline: none; border-bottom-color: var(--navy); }
+  .course-card .sub-fields {
+    display: grid;
+    grid-template-columns: 56px 1fr 64px;
+    gap: 6px;
+  }
+  .course-card .sub-fields label {
+    display: block;
+    font-size: 9.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink-faint);
+    margin-bottom: 3px;
+  }
+  .course-card input[type="number"], .course-card input[type="date"] {
+    font-size: 12.5px;
+    padding: 5px 6px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    background: #fff;
+  }
+  .course-card .remove-btn {
+    position: absolute;
+    top: 8px; right: 8px;
+    background: none; border: none;
+    color: var(--ink-faint);
+    cursor: pointer;
+    font-size: 15px;
+    line-height: 1;
+    padding: 2px 4px;
+  }
+  .course-card .remove-btn:hover { color: var(--danger); }
+
+  .text-btn {
+    background: none; border: none;
+    color: var(--navy); font-weight: 600;
+    cursor: pointer; font-size: 13px; padding: 2px 0;
+  }
+  .text-btn:hover { text-decoration: underline; }
+
+  .day-inputs {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+  }
+  .day-field label {
+    display: block; font-size: 10px; text-transform: uppercase;
+    color: var(--ink-faint); margin-bottom: 4px; text-align: center;
+  }
+  .day-field input {
+    width: 100%; padding: 6px 2px; text-align: center;
+    border: 1px solid var(--line); border-radius: 3px; font-size: 13px;
+  }
+
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 11.5px; color: var(--ink-soft); margin-bottom: 5px; }
+  select {
+    width: 100%; padding: 8px 9px; border: 1px solid var(--line);
+    border-radius: var(--radius); background: #fff; font-size: 13.5px;
+  }
+
+  .algo-toggle {
+    display: flex;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .algo-toggle label {
+    flex: 1; text-align: center; padding: 9px 6px;
+    font-size: 12.5px; font-weight: 600; cursor: pointer;
+    color: var(--ink-soft); background: #fff;
+    transition: background 0.15s, color 0.15s;
+    border-right: 1px solid var(--line);
+  }
+  .algo-toggle label:last-child { border-right: none; }
+  .algo-toggle input { display: none; }
+  .algo-toggle input:checked + span { color: #fff; }
+  .algo-toggle label.active { background: var(--navy); color: #fff; }
+
+  button.primary, button.secondary {
+    width: 100%;
+    border: none;
+    padding: 12px 18px;
+    font-size: 13.5px;
+    font-weight: 600;
+    border-radius: var(--radius);
+    cursor: pointer;
+    margin-top: 8px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: background 0.15s, opacity 0.15s;
+  }
+  button.primary { background: var(--navy); color: #fff; }
+  button.primary:hover:not(:disabled) { background: var(--navy-deep); }
+  button.secondary { background: var(--navy-wash); color: var(--navy); }
+  button.secondary:hover:not(:disabled) { background: #e3e7f1; }
+  button:disabled { opacity: 0.55; cursor: not-allowed; }
+
+  .spinner {
+    width: 13px; height: 13px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  button.secondary .spinner { border-color: rgba(40,52,92,0.3); border-top-color: var(--navy); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  #status-msg { margin-top: 10px; font-size: 12.5px; color: var(--danger); min-height: 1em; }
+
+  /* ---------- Main / results ---------- */
+
+  .main h1 {
+    font-family: 'Lora', serif;
+    font-weight: 600;
+    font-size: 26px;
+    margin: 0 0 6px;
+  }
+  .main .lede { color: var(--ink-soft); font-size: 14px; margin-bottom: 36px; max-width: 60ch; }
+
+  .empty-state {
+    border: 1px dashed var(--line);
+    border-radius: var(--radius-lg);
+    padding: 48px 32px;
+    text-align: center;
+    color: var(--ink-soft);
+  }
+  .empty-state .big { font-family: 'Lora', serif; font-size: 17px; color: var(--ink); margin-bottom: 6px; }
+
+  #results { display: none; }
+
+  .compare-strip {
+    display: none;
+    gap: 14px;
+    margin-bottom: 32px;
+  }
+  .compare-card {
+    flex: 1;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 16px 18px;
+    cursor: pointer;
+    background: var(--panel);
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .compare-card:hover { border-color: var(--navy); }
+  .compare-card.selected { border-color: var(--navy); box-shadow: 0 0 0 1px var(--navy); }
+  .compare-card .algo-name {
+    font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--ink-faint); font-weight: 600; margin-bottom: 6px;
+  }
+  .compare-card .pct {
+    font-family: 'Lora', serif; font-size: 30px; font-weight: 600; color: var(--navy);
+  }
+  .compare-card .delta {
+    display: inline-block; margin-left: 8px; font-size: 12px; font-weight: 600;
+    padding: 2px 7px; border-radius: 10px;
+  }
+  .delta.better { background: var(--sage-wash); color: var(--sage); }
+  .delta.worse { background: #f6e9e7; color: var(--danger); }
+
+  .coverage-block {
+    display: flex; align-items: baseline; gap: 14px; margin-bottom: 8px;
+  }
+  .coverage-number {
+    font-family: 'Lora', serif; font-size: 46px; font-weight: 600; color: var(--navy);
+  }
+  .coverage-label { color: var(--ink-soft); font-size: 13.5px; }
+  .active-algo-tag {
+    display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.03em; padding: 3px 9px; border-radius: 10px;
+    background: var(--gold-soft); color: #7a5c0f; margin-bottom: 18px;
+  }
+
+  h2.section-h {
+    font-family: 'Lora', serif; font-weight: 600; font-size: 17px;
+    margin: 36px 0 14px; padding-bottom: 8px; border-bottom: 1px solid var(--line);
+  }
+
+  table.priority-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  table.priority-table th {
+    text-align: left; font-weight: 600; font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.03em; color: var(--ink-faint); padding: 7px 9px;
+    border-bottom: 1px solid var(--ink);
+  }
+  table.priority-table td { padding: 10px 9px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .bar-cell { width: 130px; }
+  .bar-track { background: var(--line); border-radius: 2px; height: 7px; overflow: hidden; }
+  .bar-fill {
+    background: var(--gold); height: 100%; width: 0%;
+    transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .explanation-text { color: var(--ink-soft); font-size: 12px; margin-top: 2px; }
+
+  /* ---------- Calendar ---------- */
+
+  .calendar-wrap { border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; }
+  .calendar { display: grid; grid-template-columns: 50px repeat(7, 1fr); font-size: 11.5px; }
+  .cal-head {
+    padding: 9px 4px; font-weight: 600; text-align: center;
+    border-right: 1px solid var(--line); border-bottom: 1px solid var(--ink);
+    background: var(--navy-wash); color: var(--navy);
+  }
+  .cal-head.corner { border-right: 1px solid var(--ink); background: var(--panel); }
+  .cal-grid-body { display: grid; grid-template-columns: 50px repeat(7, 1fr); }
+  .cal-hourlabel {
+    grid-column: 1; border-right: 1px solid var(--ink); border-bottom: 1px solid var(--line);
+    padding: 1px 5px; color: var(--ink-faint); text-align: right; font-size: 10px;
+  }
+  .cal-cell { border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .session-block {
+    grid-column: var(--col); grid-row: var(--row-start) / span var(--row-span);
+    background: var(--navy); color: #fff; border-radius: 3px;
+    padding: 3px 6px; font-size: 10.5px; line-height: 1.25;
+    margin: 1px 2px; overflow: hidden; cursor: default;
+    transition: filter 0.1s;
+  }
+  .session-block:hover { filter: brightness(1.18); }
+  .session-block.algo-search { background: var(--sage); }
+  .session-block .t { opacity: 0.85; font-size: 9.5px; display: block; }
+  .session-block.short {
+    padding: 0 5px; line-height: 18px; font-size: 10px;
+    white-space: nowrap; text-overflow: ellipsis;
+  }
+  .session-block.short .t { display: none; }
+
+  .notice {
+    display: none;
+    background: #fbf3dc; border: 1px solid #ecd9a0; color: #6b5210;
+    border-radius: var(--radius); padding: 10px 14px; margin: 0 0 22px;
+    font-size: 12.5px; line-height: 1.5;
+  }
+  .notice ul { margin: 0; padding-left: 18px; }
+  .cal-head .dnum { display: block; font-weight: 400; font-size: 10px; color: var(--ink-faint); }
+
+  .legend { display: flex; gap: 18px; margin: 10px 2px 0; font-size: 12px; color: var(--ink-soft); }
+  .legend .swatch { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+
+  @media (max-width: 860px) {
+    .app-shell { flex-direction: column; }
+    .sidebar { width: 100%; height: auto; position: relative; top: auto; border-right: none; border-bottom: 1px solid var(--line); padding-top: 72px; }
+    .main { padding: 24px 20px 60px; max-width: none; }
+    .course-card .sub-fields { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="brand">Study Planner</span>
+  <span class="sub">AI Study Planner &middot; CSCE 5210</span>
+  <span class="status-pill"><span class="status-dot" id="status-dot"></span><span id="status-text">Checking backend…</span></span>
+</div>
+
+<div class="app-shell">
+  <aside class="sidebar">
+    <h2 class="sidebar-h">Courses</h2>
+    <div id="course-rows"></div>
+    <button class="text-btn" id="add-course-btn">+ Add course</button>
+    &nbsp;&nbsp;
+    <button class="text-btn" id="load-sample-btn">Load example data</button>
+
+    <h2 class="sidebar-h">Plan window</h2>
+    <div class="field">
+      <label for="start-date">Plan starts on (covers 7 days)</label>
+      <input type="date" id="start-date" style="width:100%;padding:8px 9px;border:1px solid var(--line);border-radius:var(--radius);font-size:13.5px;">
+    </div>
+
+    <h2 class="sidebar-h">Weekly availability (hours per weekday)</h2>
+    <div class="day-inputs" id="availability-inputs"></div>
+
+    <h2 class="sidebar-h">Preferences</h2>
+    <div class="field">
+      <label for="preferred-time">Preferred study time</label>
+      <select id="preferred-time">
+        <option value="anytime">Anytime</option>
+        <option value="morning">Morning</option>
+        <option value="afternoon">Afternoon</option>
+        <option value="evening">Evening</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Scheduling algorithm</label>
+      <div class="algo-toggle" id="algo-toggle">
+        <label class="active" data-value="greedy"><input type="radio" name="algo" value="greedy" checked><span>Greedy</span></label>
+        <label data-value="search"><input type="radio" name="algo" value="search"><span>Search</span></label>
+      </div>
+    </div>
+
+    <button class="primary" id="generate-btn"><span class="btn-label">Generate study plan</span></button>
+    <button class="secondary" id="compare-btn"><span class="btn-label">Compare both algorithms</span></button>
+    <div id="status-msg"></div>
+  </aside>
+
+  <main class="main">
+    <h1>Your weekly plan</h1>
+    <div class="lede">Add your courses and availability on the left, then generate a prioritized study schedule — or compare how the greedy and search-based schedulers handle the same week differently.</div>
+
+    <div class="empty-state" id="empty-state">
+      <div class="big">No plan generated yet</div>
+      Fill in your courses and click "Generate study plan" to see your week.
+    </div>
+
+    <div class="compare-strip" id="compare-strip">
+      <div class="compare-card" id="compare-greedy" data-algo="greedy">
+        <div class="algo-name">Greedy</div>
+        <div class="pct" id="compare-greedy-pct">—</div>
+      </div>
+      <div class="compare-card" id="compare-search" data-algo="search">
+        <div class="algo-name">Search (hill-climbing)</div>
+        <div class="pct" id="compare-search-pct">—</div>
+      </div>
+    </div>
+
+    <div id="results">
+      <div class="notice" id="notice"></div>
+      <span class="active-algo-tag" id="active-algo-tag">Greedy</span>
+      <div class="coverage-block">
+        <div class="coverage-number" id="coverage-number">0%</div>
+        <div class="coverage-label">of total required study hours scheduled</div>
+      </div>
+
+      <h2 class="section-h">Course priorities</h2>
+      <table class="priority-table">
+        <thead><tr><th>Course</th><th>Priority</th><th>Hours</th><th class="bar-cell">Coverage</th></tr></thead>
+        <tbody id="priority-tbody"></tbody>
+      </table>
+
+      <h2 class="section-h">Weekly schedule</h2>
+      <div class="calendar-wrap"><div id="calendar"></div></div>
+      <div class="legend">
+        <span><span class="swatch" style="background:var(--navy)"></span>Greedy session</span>
+        <span><span class="swatch" style="background:var(--sage)"></span>Search session</span>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="config.js"></script>
+<script>
+// Set window.APP_CONFIG.API_BASE in config.js to point at a deployed backend.
+const API_BASE = (window.APP_CONFIG && window.APP_CONFIG.API_BASE) || "http://127.0.0.1:8000";
+const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const DEFAULT_AVAILABILITY = [3, 2, 3, 2, 2, 4, 4];
+const GRID_START_HOUR = 6;
+const GRID_END_HOUR = 23.5;
+const SLOT_HOURS = 0.5;
+
+let courseRowCount = 0;
+let cache = { greedy: null, search: null };
+
+// Small DOM helper: builds elements without ever parsing user text as HTML.
+function el(tag, props = {}, children = []) {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (k === "class") node.className = v;
+    else if (k === "text") node.textContent = v;
+    else if (k === "dataset") Object.assign(node.dataset, v);
+    else if (k in node) node[k] = v;
+    else node.setAttribute(k, v);
+  }
+  for (const c of [].concat(children)) if (c != null) node.append(c);
+  return node;
+}
+
+function labelled(label, input) {
+  return el("div", {}, [el("label", { text: label }), input]);
+}
+
+function addCourseRow(data) {
+  const id = courseRowCount++;
+  const removeBtn = el("button", { class: "remove-btn", title: "Remove course", type: "button", text: "\u00d7" });
+  removeBtn.setAttribute("aria-label", "Remove course");
+
+  const card = el("div", { class: "course-card", dataset: { rowId: id } }, [
+    removeBtn,
+    el("input", { type: "text", placeholder: "Course name", class: "f-name", maxLength: 80, value: data?.name ?? "" }),
+    el("div", { class: "sub-fields" }, [
+      labelled("Diff.", el("input", { type: "number", min: 1, max: 5, class: "f-difficulty", value: data?.difficulty ?? 3 })),
+      labelled("Exam date", el("input", { type: "date", class: "f-examdate", value: data?.exam_date ?? "" })),
+      labelled("Hours", el("input", { type: "number", min: 0.5, step: 0.5, class: "f-hours", value: data?.required_hours ?? "" })),
+    ]),
+  ]);
+  removeBtn.addEventListener("click", () => card.remove());
+  document.getElementById("course-rows").appendChild(card);
+}
+
+function buildAvailabilityInputs() {
+  const container = document.getElementById("availability-inputs");
+  DAYS.forEach((day, i) => {
+    const field = document.createElement("div");
+    field.className = "day-field";
+    field.innerHTML = `<label for="avail-${day}">${day.slice(0, 2)}</label><input type="number" id="avail-${day}" min="0" max="24" value="${DEFAULT_AVAILABILITY[i]}">`;
+    container.appendChild(field);
+  });
+}
+
+function collectCourses() {
+  const rows = document.querySelectorAll(".course-card");
+  const courses = [];
+  for (const row of rows) {
+    const name = row.querySelector(".f-name").value.trim();
+    const difficulty = parseInt(row.querySelector(".f-difficulty").value, 10);
+    const exam_date = row.querySelector(".f-examdate").value;
+    const required_hours = parseFloat(row.querySelector(".f-hours").value);
+    if (!name || !exam_date || !required_hours) continue;
+    courses.push({ name, difficulty: difficulty || 3, exam_date, required_hours });
+  }
+  return courses;
+}
+
+function collectAvailability() {
+  const availability = {};
+  DAYS.forEach(day => { availability[day] = parseFloat(document.getElementById(`avail-${day}`).value) || 0; });
+  return availability;
+}
+
+// FastAPI returns validation errors as a list of {loc, msg}; turn them into text.
+function formatApiError(body, status) {
+  const d = body && body.detail;
+  if (typeof d === "string") return d;
+  if (Array.isArray(d) && d.length) {
+    return d.map(e => {
+      const where = (e.loc || []).filter(x => x !== "body").join(" \u203a ");
+      const msg = String(e.msg || "invalid value").replace(/^Value error, /, "");
+      return where ? `${where}: ${msg}` : msg;
+    }).join("; ");
+  }
+  return `Server returned ${status}`;
+}
+
+function setStatus(msg, isError = true) {
+  const el = document.getElementById("status-msg");
+  el.textContent = msg || "";
+  el.style.color = isError ? "var(--danger)" : "var(--ink-soft)";
+}
+
+function setButtonLoading(btn, loading, loadingText) {
+  btn.disabled = loading;
+  const label = btn.querySelector(".btn-label");
+  if (loading) {
+    btn.dataset.originalText = label.textContent;
+    label.innerHTML = `<span class="spinner"></span> ${loadingText}`;
+  } else {
+    label.textContent = btn.dataset.originalText || label.textContent;
+  }
+}
+
+async function checkBackendHealth() {
+  const dot = document.getElementById("status-dot");
+  const text = document.getElementById("status-text");
+  try {
+    const res = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(2500) });
+    if (!res.ok) throw new Error();
+    dot.className = "status-dot ok";
+    text.textContent = "Backend connected";
+  } catch {
+    dot.className = "status-dot down";
+    text.textContent = "Backend not reachable";
+  }
+}
+
+async function loadSampleData() {
+  try {
+    const res = await fetch(`${API_BASE}/sample-courses`);
+    if (!res.ok) throw new Error("Could not reach backend for sample data.");
+    const data = await res.json();
+    document.getElementById("course-rows").innerHTML = "";
+    data.forEach(c => addCourseRow(c));
+    setStatus("");
+  } catch (err) {
+    setStatus(`Couldn't load example data: ${err.message}`);
+  }
+}
+
+function formatHour(hour) {
+  const totalMinutes = Math.round(hour * 60);
+  let h24 = Math.floor(totalMinutes / 60) % 24;
+  const minutes = totalMinutes % 60;
+  const period = h24 < 12 ? "AM" : "PM";
+  let h12 = h24 % 12;
+  if (h12 === 0) h12 = 12;
+  return minutes === 0 ? `${h12} ${period}` : `${h12}:${String(minutes).padStart(2, "0")} ${period}`;
+}
+
+function animateNumber(el, target) {
+  const start = 0;
+  const duration = 650;
+  const startTime = performance.now();
+  function tick(now) {
+    const progress = Math.min(1, (now - startTime) / duration);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    el.textContent = `${(start + (target - start) * eased).toFixed(1)}%`;
+    if (progress < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+function renderPriorityTable(courses) {
+  const tbody = document.getElementById("priority-tbody");
+  tbody.replaceChildren();
+  courses.forEach(c => {
+    const pct = c.required_hours ? Math.round(100 * c.scheduled_hours / c.required_hours) : 0;
+    const fill = el("div", { class: "bar-fill", dataset: { pct } });
+    tbody.appendChild(el("tr", {}, [
+      el("td", {}, [el("div", { text: c.name }), el("div", { class: "explanation-text", text: c.explanation })]),
+      el("td", { text: c.priority.toFixed(3) }),
+      el("td", { text: `${c.scheduled_hours} / ${c.required_hours} hrs` }),
+      el("td", { class: "bar-cell" }, [el("div", { class: "bar-track" }, [fill])]),
+    ]));
+  });
+  requestAnimationFrame(() => {
+    document.querySelectorAll(".bar-fill").forEach(f => { f.style.width = f.dataset.pct + "%"; });
+  });
+}
+
+function renderNotice(warnings) {
+  const box = document.getElementById("notice");
+  box.replaceChildren();
+  if (!warnings || warnings.length === 0) { box.style.display = "none"; return; }
+  box.append(el("ul", {}, warnings.map(w => el("li", { text: w }))));
+  box.style.display = "block";
+}
+
+function renderCalendar(sessions, week, algo) {
+  const container = document.getElementById("calendar");
+  container.replaceChildren();
+  const totalSlots = Math.round((GRID_END_HOUR - GRID_START_HOUR) / SLOT_HOURS);
+
+  const head = el("div", { class: "calendar" }, [el("div", { class: "cal-head corner" })]);
+  week.forEach(w => {
+    const dayNum = String(parseInt(w.date.slice(8, 10), 10));
+    head.append(el("div", { class: "cal-head" }, [w.day.slice(0, 3), el("span", { class: "dnum", text: dayNum })]));
+  });
+  container.appendChild(head);
+
+  const body = el("div", { class: "cal-grid-body" });
+  body.style.gridTemplateRows = `repeat(${totalSlots}, 20px)`;
+
+  for (let slot = 0; slot < totalSlots; slot++) {
+    const hour = GRID_START_HOUR + slot * SLOT_HOURS;
+    const label = el("div", { class: "cal-hourlabel", text: Math.abs(hour % 1) < 0.001 ? formatHour(hour) : "" });
+    label.style.gridRow = `${slot + 1}`;
+    body.appendChild(label);
+    week.forEach((w, di) => {
+      const cell = el("div", { class: "cal-cell" });
+      cell.style.gridColumn = `${di + 2}`;
+      cell.style.gridRow = `${slot + 1}`;
+      body.appendChild(cell);
+    });
+  }
+
+  sessions.forEach(s => {
+    const dayIndex = week.findIndex(w => w.date === s.date);
+    if (dayIndex === -1) return;
+    const rowStart = Math.round((s.start_hour - GRID_START_HOUR) / SLOT_HOURS) + 1;
+    const rowSpan = Math.max(1, Math.round(s.duration / SLOT_HOURS));
+    const range = `${formatHour(s.start_hour)}\u2013${formatHour(s.start_hour + s.duration)}`;
+    const block = el("div", {
+      class: "session-block" + (algo === "search" ? " algo-search" : "") + (rowSpan === 1 ? " short" : ""),
+      title: `${s.course} \u2014 ${s.day} ${s.date}, ${range}`,
+    }, [s.course, el("span", { class: "t", text: range })]);
+    block.style.setProperty("--col", dayIndex + 2);
+    block.style.setProperty("--row-start", rowStart);
+    block.style.setProperty("--row-span", rowSpan);
+    body.appendChild(block);
+  });
+
+  container.appendChild(body);
+}
+
+function displayResult(algo) {
+  const data = cache[algo];
+  if (!data) return;
+
+  document.getElementById("empty-state").style.display = "none";
+  document.getElementById("results").style.display = "block";
+  document.getElementById("active-algo-tag").textContent = algo === "greedy" ? "Greedy" : "Search (hill-climbing)";
+  animateNumber(document.getElementById("coverage-number"), data.coverage_percent);
+  renderPriorityTable(data.courses);
+  renderNotice(data.warnings);
+  renderCalendar(data.sessions, data.week, algo);
+
+  document.querySelectorAll(".algo-toggle label").forEach(l => l.classList.toggle("active", l.dataset.value === algo));
+  document.querySelector(`input[name="algo"][value="${algo}"]`).checked = true;
+
+  document.querySelectorAll(".compare-card").forEach(c => c.classList.toggle("selected", c.dataset.algo === algo));
+}
+
+async function fetchSchedule(algo) {
+  const courses = collectCourses();
+  if (courses.length === 0) throw new Error("Add at least one course with a name, exam date, and required hours.");
+
+  const payload = {
+    courses,
+    availability: collectAvailability(),
+    preferred_time: document.getElementById("preferred-time").value,
+    algorithm: algo,
+    start_date: document.getElementById("start-date").value || null,
+  };
+
+  const res = await fetch(`${API_BASE}/schedule`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({}));
+    throw new Error(formatApiError(errBody, res.status));
+  }
+  return res.json();
+}
+
+async function handleGenerate() {
+  const btn = document.getElementById("generate-btn");
+  const algo = document.querySelector('input[name="algo"]:checked').value;
+  setStatus("", false);
+  setButtonLoading(btn, true, "Generating…");
+  try {
+    const data = await fetchSchedule(algo);
+    cache[algo] = data;
+    displayResult(algo);
+  } catch (err) {
+    setStatus(`Couldn't generate a plan: ${err.message}`);
+  } finally {
+    setButtonLoading(btn, false);
+  }
+}
+
+async function handleCompare() {
+  const btn = document.getElementById("compare-btn");
+  setStatus("", false);
+  setButtonLoading(btn, true, "Comparing…");
+  try {
+    const [greedy, search] = await Promise.all([fetchSchedule("greedy"), fetchSchedule("search")]);
+    cache.greedy = greedy;
+    cache.search = search;
+
+    document.getElementById("compare-strip").style.display = "flex";
+    document.getElementById("compare-greedy-pct").textContent = `${greedy.coverage_percent}%`;
+    document.getElementById("compare-search-pct").textContent = `${search.coverage_percent}%`;
+
+    const diff = Math.round((search.coverage_percent - greedy.coverage_percent) * 10) / 10;
+    const existingDelta = document.querySelector("#compare-search .delta");
+    if (existingDelta) existingDelta.remove();
+    if (diff !== 0) {
+      const badge = document.createElement("span");
+      badge.className = `delta ${diff > 0 ? "better" : "worse"}`;
+      badge.textContent = `${diff > 0 ? "+" : ""}${diff}pts`;
+      document.getElementById("compare-search-pct").after(badge);
+    }
+
+    const selected = document.querySelector('input[name="algo"]:checked').value;
+    displayResult(selected);
+  } catch (err) {
+    setStatus(`Couldn't compare algorithms: ${err.message}`);
+  } finally {
+    setButtonLoading(btn, false);
+  }
+}
+
+document.getElementById("algo-toggle").addEventListener("click", (e) => {
+  const label = e.target.closest("label");
+  if (!label) return;
+  const algo = label.dataset.value;
+  document.querySelectorAll(".algo-toggle label").forEach(l => l.classList.toggle("active", l === label));
+  if (cache[algo]) displayResult(algo);
+});
+
+document.querySelectorAll(".compare-card").forEach(card => {
+  card.addEventListener("click", () => displayResult(card.dataset.algo));
+});
+
+(function setDefaultStartDate() {
+  const d = new Date();
+  const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  document.getElementById("start-date").value = iso;
+})();
+buildAvailabilityInputs();
+addCourseRow();
+document.getElementById("add-course-btn").addEventListener("click", () => addCourseRow());
+document.getElementById("load-sample-btn").addEventListener("click", loadSampleData);
+document.getElementById("generate-btn").addEventListener("click", handleGenerate);
+document.getElementById("compare-btn").addEventListener("click", handleCompare);
+checkBackendHealth();
+</script>
+</body>
+</html>
